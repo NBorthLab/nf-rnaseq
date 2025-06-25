@@ -1,0 +1,147 @@
+include { FASTQC } from "../../modules/local/fastqc"
+include { TRIM_GALORE } from "../../modules/local/trim_galore"
+include { STAR_INDEX } from "../../modules/local/star/index"
+include { STAR_ALIGN } from "../../modules/local/star/align"
+include {
+    INFER_STRAND
+} from "../../modules/local/rseqc/infer_strand"
+include { FEATURECOUNTS } from "../../modules/local/featurecounts"
+
+include {
+    GUNZIP as GUNZIP_GTF
+    GTF2BED
+} from "../../modules/local/util"
+include { COMBINE_COUNTS } from "../../modules/local/combine_counts"
+
+
+workflow RNASEQ {
+
+    take:
+    ch_gtf
+    ch_genome
+    ch_samplesheet
+
+    main:
+
+    // Read sample sheet
+    ch_samplesheet
+        .splitCsv(skip: 1)
+        .map { sample, fastq_1, fastq_2, strandedness ->
+            [
+                sample as String,
+                file(fastq_1),
+                fastq_2 ? file(fastq_2) : null,
+                strandedness as String,
+            ]
+        }
+        .map { sample, fastq_1, fastq_2, strandedness ->
+            if (!fastq_2) {
+                return [
+                    [
+                        "id": sample,
+                        "strandedness": strandedness,
+                        "paired_end": false,
+                    ],
+                    fastq_1,
+                ]
+            }
+            else {
+                return [
+                    [
+                        "id": sample,
+                        "strandedness": strandedness,
+                        "paired_end": true,
+                    ],
+                    [fastq_1, fastq_2],
+                ]
+            }
+        }
+        .groupTuple()
+        .map { meta, reads -> [meta, reads.flatten()] }
+        .set { ch_fastq }
+
+    // Quality check of raw reads
+    FASTQC(
+        ch_fastq
+    )
+
+    // Trimming of raw reads
+    TRIM_GALORE(
+        ch_fastq
+    )
+    ch_trimmed_reads = TRIM_GALORE.out.reads
+
+    // Unzip annotation GTF file
+    GUNZIP_GTF(
+        ch_gtf
+    )
+    ch_unzipped_gtf = GUNZIP_GTF.out
+
+    // Index genome
+    STAR_INDEX(
+        ch_genome,
+        ch_unzipped_gtf
+    )
+    // .collect() is needed to transform from a queue channel (that can only be
+    // consued once) to a value channel (multiple consumptions).
+    ch_index = STAR_INDEX.out.index.collect()
+
+    // Align trimmed reads to genome
+    STAR_ALIGN(
+        ch_trimmed_reads,
+        ch_index
+    )
+    ch_alignment = STAR_ALIGN.out.alignment
+
+    // Convert GTF to BED
+    GTF2BED(
+        ch_unzipped_gtf
+    )
+    ch_annotation_bed = GTF2BED.out.collect()
+
+    // Infer strandedness of alignment
+    INFER_STRAND(
+        ch_alignment,
+        ch_annotation_bed
+    )
+    ch_inferred_strand = INFER_STRAND.out
+
+    // Update the metadata to include the inferred strandedness information
+    ch_inferred_strand
+        .map {
+            meta, log, alignment ->
+                def log_file = file(log)
+                def log_text = log_file.readLines()
+                def fw = log_text[4] =~ /.+ (.+)$/
+                def rv = log_text[5] =~ /.+ (.+)$/
+                def fw_stranded = fw[0][1] as Float > 0.75
+                def rv_stranded = rv[0][1] as Float > 0.75
+                if (!fw_stranded && !rv_stranded) {
+                    meta.strandedness = "unstranded"
+                } else if (fw_stranded && !rv_stranded) {
+                    meta.strandedness = "forward"
+                } else if (!fw_stranded && rv_stranded) {
+                    meta.strandedness = "reverse"
+                }
+                return [meta, alignment]
+        }
+        .set { ch_alignment_inferred }
+
+    // Quantify reads
+    FEATURECOUNTS(
+        ch_alignment_inferred,
+        ch_unzipped_gtf.collect()
+    )
+    ch_counts = FEATURECOUNTS.out.counts
+
+    ch_counts
+        .collect(flat: false) { meta, counts -> counts }
+        .set { ch_counts }
+
+    COMBINE_COUNTS(
+        ch_counts
+    )
+
+    // emit:
+    // counts = ch_counts
+}
