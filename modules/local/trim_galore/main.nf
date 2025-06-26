@@ -1,6 +1,10 @@
 process TRIM_GALORE {
 
-    container "quay.io/biocontainers/trim-galore:0.6.9--hdfd78af_0"
+    cpus 4
+    memory '64 GB'
+    scratch 'ram-disk'
+
+    container "https://depot.galaxyproject.org/singularity/trim-galore:0.6.9--hdfd78af_0"
     publishDir "results/trimmed_reads", mode: "copy"
 
     input:
@@ -18,14 +22,14 @@ process TRIM_GALORE {
         trim_galore \\
             --fastqc \\
             --paired \\
-            --cores 4 \\
+            --cores $task.cpus \\
             $reads
         """
     } else {
         """
         trim_galore \\
             --fastqc \\
-            --cores 4 \\
+            --cores $task.cpus \\
             $reads
         """
     }

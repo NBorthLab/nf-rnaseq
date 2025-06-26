@@ -1,6 +1,6 @@
 process INFER_STRAND {
 
-    container "community.wave.seqera.io/library/pip_rseqc:2889b03904e9d027"
+    container "https://depot.galaxyproject.org/singularity/rseqc:5.0.4--pyhdfd78af_0"
 
     input:
     tuple val(meta), path(alignment)

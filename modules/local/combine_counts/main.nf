@@ -1,6 +1,7 @@
 process COMBINE_COUNTS {
 
-    container "community.wave.seqera.io/library/r-essentials:4.4--6b522ecbb9ba5bdc"
+    conda "envs/r.linux-64.pin.txt"
+
     publishDir "results/counts"
 
     input:

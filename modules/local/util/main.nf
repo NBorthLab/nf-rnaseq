@@ -15,7 +15,7 @@ process GUNZIP {
 
 process GTF2BED {
 
-    container "community.wave.seqera.io/library/bedops:2.4.42--91acb3d4e24f8e85"
+    container "https://depot.galaxyproject.org/singularity/bedops:2.4.40--h9f5acd7_0"
 
     input:
     path gtf

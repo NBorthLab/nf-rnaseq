@@ -1,0 +1,6 @@
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::r-essentials=4.4
+platforms:
+  - linux-64

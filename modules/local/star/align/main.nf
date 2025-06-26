@@ -1,7 +1,10 @@
 process STAR_ALIGN {
-    cpus 2
 
-    container "community.wave.seqera.io/library/star:2.7.11b--822039d47adf19a7"
+    cpus 8
+    memory '128 GB'
+    scratch 'ram-disk'
+
+    container "https://depot.galaxyproject.org/singularity/star:2.7.11b--h5ca1c30_4"
     publishDir "results/aligned_reads/${meta.id}", mode: "copy"
 
     input:

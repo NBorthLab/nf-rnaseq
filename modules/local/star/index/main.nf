@@ -1,8 +1,10 @@
 process STAR_INDEX {
 
-    cpus 8
+    cpus 32
+    memory '256 GB'
+    scratch 'ram-disk'
 
-    container "community.wave.seqera.io/library/star:2.7.11b--822039d47adf19a7"
+    container "https://depot.galaxyproject.org/singularity/star:2.7.11b--h5ca1c30_4"
     publishDir "results/genome_index", mode: "copy"
 
     input:
