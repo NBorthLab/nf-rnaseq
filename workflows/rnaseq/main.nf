@@ -6,12 +6,12 @@ include {
     INFER_STRAND
 } from "../../modules/local/rseqc/infer_strand"
 include { FEATURECOUNTS } from "../../modules/local/featurecounts"
-
 include {
     GUNZIP as GUNZIP_GTF
     GTF2BED
 } from "../../modules/local/util"
 include { COMBINE_COUNTS } from "../../modules/local/combine_counts"
+include { MULTIQC } from "../../modules/local/multiqc"
 
 
 workflow RNASEQ {
@@ -22,6 +22,9 @@ workflow RNASEQ {
     ch_samplesheet
 
     main:
+
+    ch_multiqc_files = Channel.empty()
+
 
     // Read sample sheet
     ch_samplesheet
@@ -60,16 +63,34 @@ workflow RNASEQ {
         .map { meta, reads -> [meta, reads.flatten()] }
         .set { ch_fastq }
 
+
+    // ================================================
+    //   RAW READS QC
+    // ================================================
+
     // Quality check of raw reads
     FASTQC(
         ch_fastq
     )
 
-    // Trimming of raw reads
+    // ================================================
+    //   TRIM READS
+    // ================================================
+
+    // Trimming of raw reads 
     TRIM_GALORE(
         ch_fastq
     )
     ch_trimmed_reads = TRIM_GALORE.out.reads
+
+    ch_multiqc_files = ch_multiqc_files
+        .mix(TRIM_GALORE.out.report)
+        .mix(TRIM_GALORE.out.zip)
+
+
+    // ================================================
+    //   ALIGN READS
+    // ================================================
 
     // Unzip annotation GTF file
     GUNZIP_GTF(
@@ -93,18 +114,27 @@ workflow RNASEQ {
     )
     ch_alignment = STAR_ALIGN.out.alignment
 
+    ch_multiqc_files = ch_multiqc_files
+        .mix(STAR_ALIGN.out.log)
+        .mix(STAR_ALIGN.out.log_final)
+
+
+    // ================================================
+    //   INFER STRANDEDNESS
+    // ================================================
+
     // Convert GTF to BED
-    GTF2BED(
-        ch_unzipped_gtf
-    )
-    ch_annotation_bed = GTF2BED.out.collect()
+        GTF2BED(
+                ch_unzipped_gtf
+               )
+        ch_annotation_bed = GTF2BED.out.collect()
 
     // Infer strandedness of alignment
     INFER_STRAND(
         ch_alignment,
         ch_annotation_bed
     )
-    ch_inferred_strand = INFER_STRAND.out
+    ch_inferred_strand = INFER_STRAND.out.inferred
 
     // Update the metadata to include the inferred strandedness information
     ch_inferred_strand
@@ -127,12 +157,19 @@ workflow RNASEQ {
         }
         .set { ch_alignment_inferred }
 
-    // Quantify reads
+
+    // ================================================
+    //   Quantify reads
+    // ================================================
+
     FEATURECOUNTS(
         ch_alignment_inferred,
         ch_unzipped_gtf.collect()
     )
     ch_counts = FEATURECOUNTS.out.counts
+
+    ch_multiqc_files = ch_multiqc_files
+        .mix(FEATURECOUNTS.out.summary)
 
     ch_counts
         .collect(flat: false) { meta, counts -> counts }
@@ -141,6 +178,19 @@ workflow RNASEQ {
     COMBINE_COUNTS(
         ch_counts
     )
+
+
+    // ================================================
+    //   MULTIQC
+    // ================================================
+
+    // Remove meta data and get only the file paths
+    ch_multiqc_files = ch_multiqc_files.transpose().map { it[1] }
+
+    MULTIQC(
+        ch_multiqc_files.collect()
+    )
+
 
     // emit:
     // counts = ch_counts

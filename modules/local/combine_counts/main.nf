@@ -2,7 +2,7 @@ process COMBINE_COUNTS {
 
     label 'small'
 
-    publishDir "results/counts"
+    publishDir "results/counts", mode: "copy"
 
     input:
     path "counts.txt*"
@@ -25,10 +25,5 @@ process COMBINE_COUNTS {
     done
 
     rm tmpfile
-
-    # Prettify sample names in the header of the TSV
-    sed -i \\
-        -e 's/.Aligned.sortedByCoord.out.bam//g' \\
-        all_counts.tsv
     """
 }
