@@ -1,8 +1,6 @@
 process FEATURECOUNTS {
 
-    cpus 8
-    memory '128 GB'
-    scratch 'ram-disk'
+    label 'big'
 
     container "https://depot.galaxyproject.org/singularity/subread:2.0.8--h577a1d6_0"
     publishDir "results/counts/${meta.id}", mode: "copy"

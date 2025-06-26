@@ -1,5 +1,7 @@
 process FASTQC {
 
+    label 'medium'
+
     container "https://depot.galaxyproject.org/singularity/trim-galore:0.6.9--hdfd78af_0"
     publishDir "results/fastqc", mode: "copy"
 

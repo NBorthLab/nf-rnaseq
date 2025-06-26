@@ -1,8 +1,6 @@
 process STAR_ALIGN {
 
-    cpus 8
-    memory '128 GB'
-    scratch 'ram-disk'
+    label 'big'
 
     container "https://depot.galaxyproject.org/singularity/star:2.7.11b--h5ca1c30_4"
     publishDir "results/aligned_reads/${meta.id}", mode: "copy"

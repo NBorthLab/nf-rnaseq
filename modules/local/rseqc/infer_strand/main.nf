@@ -1,5 +1,7 @@
 process INFER_STRAND {
 
+    label 'medium'
+
     container "https://depot.galaxyproject.org/singularity/rseqc:5.0.4--pyhdfd78af_0"
 
     input:
