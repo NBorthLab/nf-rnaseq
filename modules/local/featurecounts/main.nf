@@ -10,9 +10,9 @@ process FEATURECOUNTS {
     each path(annotation)
 
     output:
-    tuple val(meta), path("*counts.txt"), emit: counts
+    tuple val(meta), path("*counts.txt"),         emit: counts
     tuple val(meta), path("*counts.txt.summary"), emit: summary
-    path "versions.yml", emit: versions
+    path "versions.yml",                          emit: versions
 
     script:
     def strandedness = 0

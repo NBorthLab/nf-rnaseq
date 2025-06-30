@@ -1,17 +1,13 @@
-include { FASTQC } from "../../modules/local/fastqc"
-include { TRIM_GALORE } from "../../modules/local/trim_galore"
-include { STAR_INDEX } from "../../modules/local/star/index"
-include { STAR_ALIGN } from "../../modules/local/star/align"
-include {
-    INFER_STRAND
-} from "../../modules/local/rseqc/infer_strand"
-include { FEATURECOUNTS } from "../../modules/local/featurecounts"
-include {
-    GUNZIP as GUNZIP_GTF
-    GTF2BED
-} from "../../modules/local/util"
-include { COMBINE_COUNTS } from "../../modules/local/combine_counts"
-include { MULTIQC } from "../../modules/local/multiqc"
+include { FASTQC               } from "../../modules/local/fastqc"
+include { TRIM_GALORE          } from "../../modules/local/trim_galore"
+include { STAR_INDEX           } from "../../modules/local/star/index"
+include { STAR_ALIGN           } from "../../modules/local/star/align"
+include { INFER_STRAND         } from "../../modules/local/rseqc/infer_strand"
+include { FEATURECOUNTS        } from "../../modules/local/featurecounts"
+include { GUNZIP as GUNZIP_GTF } from "../../modules/local/util"
+include { GTF2BED              } from "../../modules/local/util"
+include { COMBINE_COUNTS       } from "../../modules/local/combine_counts"
+include { MULTIQC              } from "../../modules/local/multiqc"
 
 
 workflow RNASEQ {
@@ -146,6 +142,7 @@ workflow RNASEQ {
                 def rv = log_text[5] =~ /.+ (.+)$/
                 def fw_stranded = fw[0][1] as Float > 0.75
                 def rv_stranded = rv[0][1] as Float > 0.75
+
                 if (!fw_stranded && !rv_stranded) {
                     meta.strandedness = "unstranded"
                 } else if (fw_stranded && !rv_stranded) {
@@ -185,10 +182,10 @@ workflow RNASEQ {
     // ================================================
 
     // Remove meta data and get only the file paths
-    ch_multiqc_files = ch_multiqc_files.transpose().map { it[1] }
+    ch_multiqc_files = ch_multiqc_files.transpose().collect { it[1] }
 
     MULTIQC(
-        ch_multiqc_files.collect()
+        ch_multiqc_files
     )
 
 

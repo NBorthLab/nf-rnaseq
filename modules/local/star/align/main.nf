@@ -11,9 +11,9 @@ process STAR_ALIGN {
 
     output:
     tuple val(meta), path("*Aligned.sortedByCoord.out.bam"), emit: alignment
-    tuple val(meta), path("*Log.final.out"), emit: log_final
-    tuple val(meta), path("*Log.out"), emit: log
-    path "versions.yml", emit: versions
+    tuple val(meta), path("*Log.final.out"),                 emit: log_final
+    tuple val(meta), path("*Log.out"),                       emit: log
+    path "versions.yml",                                     emit: versions
 
     script:
     def reads1 = []

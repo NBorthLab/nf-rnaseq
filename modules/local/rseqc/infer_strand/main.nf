@@ -10,7 +10,7 @@ process INFER_STRAND {
 
     output:
     tuple val(meta), path("infer_experiment.out.txt"), path(alignment), emit: inferred
-    path "versions.yml", emit: versions
+    path "versions.yml",                                                emit: versions
 
     script:
     """

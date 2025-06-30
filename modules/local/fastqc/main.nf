@@ -10,9 +10,9 @@ process FASTQC {
 
     output:
     // reads.simpleName is the same as .getSimpleName()
-    tuple val(meta), path("*_fastqc.zip"), emit: zip
+    tuple val(meta), path("*_fastqc.zip"),  emit: zip
     tuple val(meta), path("*_fastqc.html"), emit: html
-    path "versions.yml", emit: versions
+    path "versions.yml",                    emit: versions
 
     script:
     """
