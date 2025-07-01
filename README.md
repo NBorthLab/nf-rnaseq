@@ -49,6 +49,16 @@ Fourth column is the 'strandedness'. If unknown set to `auto`.
 single-end. `sample3` is paired-end and has technical replicates.
 
 
+### Notifications (optional)
+
+Set up an account at [ntfy.sh](https://ntfy.sh) and set up a topic for yourself.
+Add the URL of the ntfy topic as a secret to get notified on pipeline runs.
+
+```bash
+nextflow secrets set NTFY_URL http://ntfy.sh/<YOUR-TOPIC>
+```
+
+
 ## Test pipeline
 
 ```bash
@@ -58,10 +68,10 @@ nextflow run . -profile test
 ## Run pipeline
 
 ```bash
-nextflow run . -with-report
+nextflow run .
 
 # or, for subsequent runs
-nextflow run . -resume -with-report
+nextflow run . -resume
 ```
 
 ## Output
@@ -71,21 +81,21 @@ Pipeline results can bee retrieved from the `results` directory.
 ```bash
 results/
 ├── aligned_reads/          # Aligned reads
-├── all_versions.yml        # Software versions in YAML format
 ├── counts/                 # Counts of individual samles
 │   └── all_counts.tsv      # (!!!) Combined counts of all samples
 ├── fastqc/                 # FASTQC of raw reads
 ├── genome_index/           # STAR genome index
 ├── multiqc/                # MULTIQC report
+├── pipeline_info/          # Pipeline reports and software versions
 └── trimmed_reads/          # trimmed reads and their fastqc reports
 ```
 
 
 ## File structure
 
-```plain
-bin/                        # Exectuable script used in the workflow (not used currently)
-data/                       # Raw data (recommended; put your data here)
+```bash
+bin/                        # Exectuable scripts used in the workflow (not used currently)
+data/                       # Raw data (put your data here)
 envs/                       # Conda environment definition files
 modules/                    # Process definitions
 results/                    # Results directory (is created)

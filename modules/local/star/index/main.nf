@@ -3,7 +3,6 @@ process STAR_INDEX {
     label 'huge'
 
     container "https://depot.galaxyproject.org/singularity/star:2.7.11b--h5ca1c30_4"
-    publishDir "results", mode: "copy", pattern: "!versions.yml"
 
     input:
     path genome

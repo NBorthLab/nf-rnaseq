@@ -42,7 +42,11 @@ workflow.onComplete {
     log.info "Workflow completed at $workflow.complete"
     log.info "Duration: $workflow.duration"
     log.info "Execution status: ${workflow.success ? 'OK' : 'Failed'}"
-    if (params.ntfy_url) {
-        Util.sendNotification("${workflow.success ? 'OK': 'FAIL'}", params.ntfy_url)
+
+    if (secrets.NTFY_URL != null) {
+        Util.sendNotification(
+            "${workflow.success ? 'OK': 'FAIL'}",
+            secrets.NTFY_URL
+        )
     }
 }
