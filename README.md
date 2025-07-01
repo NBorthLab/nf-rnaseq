@@ -24,9 +24,9 @@ Also double-check the computational settings. You might need to change
 
 ```groovy
 params {
-    input = ""              # Samplesheet CSV file
-    genome = ""             # FASTA file of the genome sequence
-    annotation_gtf = ""     # GTF annotation file of the genome
+    input = ""              // Samplesheet CSV file
+    genome = ""             // FASTA file of the genome sequence
+    annotation_gtf = ""     // GTF annotation file of the genome
 }
 ```
 
@@ -58,8 +58,28 @@ nextflow run . -profile test
 ## Run pipeline
 
 ```bash
-nextflow run .
+nextflow run . -with-report
+
+# or, for subsequent runs
+nextflow run . -resume -with-report
 ```
+
+## Output
+
+Pipeline results can bee retrieved from the `results` directory.
+
+```bash
+results/
+├── aligned_reads/          # Aligned reads
+├── all_versions.yml        # Software versions in YAML format
+├── counts/                 # Counts of individual samles
+│   └── all_counts.tsv      # (!!!) Combined counts of all samples
+├── fastqc/                 # FASTQC of raw reads
+├── genome_index/           # STAR genome index
+├── multiqc/                # MULTIQC report
+└── trimmed_reads/          # trimmed reads and their fastqc reports
+```
+
 
 ## File structure
 

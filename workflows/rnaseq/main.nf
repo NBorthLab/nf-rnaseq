@@ -20,7 +20,7 @@ workflow RNASEQ {
     main:
 
     ch_multiqc_files = Channel.empty()
-
+    ch_versions = Channel.empty()
 
     // Read sample sheet
     ch_samplesheet
@@ -68,6 +68,7 @@ workflow RNASEQ {
     FASTQC(
         ch_fastq
     )
+    ch_versions = ch_versions.mix(FASTQC.out.versions)
 
     // ================================================
     //   TRIM READS
@@ -79,6 +80,7 @@ workflow RNASEQ {
     )
     ch_trimmed_reads = TRIM_GALORE.out.reads
 
+    ch_versions = ch_versions.mix(TRIM_GALORE.out.versions)
     ch_multiqc_files = ch_multiqc_files
         .mix(TRIM_GALORE.out.report)
         .mix(TRIM_GALORE.out.zip)
@@ -102,6 +104,7 @@ workflow RNASEQ {
     // .collect() is needed to transform from a queue channel (that can only be
     // consued once) to a value channel (multiple consumptions).
     ch_index = STAR_INDEX.out.index.collect()
+    ch_versions = ch_versions.mix(STAR_INDEX.out.versions)
 
     // Align trimmed reads to genome
     STAR_ALIGN(
@@ -113,6 +116,7 @@ workflow RNASEQ {
     ch_multiqc_files = ch_multiqc_files
         .mix(STAR_ALIGN.out.log)
         .mix(STAR_ALIGN.out.log_final)
+    ch_versions = ch_versions.mix(STAR_ALIGN.out.versions)
 
 
     // ================================================
@@ -120,10 +124,10 @@ workflow RNASEQ {
     // ================================================
 
     // Convert GTF to BED
-        GTF2BED(
-                ch_unzipped_gtf
-               )
-        ch_annotation_bed = GTF2BED.out.collect()
+    GTF2BED(
+        ch_unzipped_gtf
+    )
+    ch_annotation_bed = GTF2BED.out.collect()
 
     // Infer strandedness of alignment
     INFER_STRAND(
@@ -131,6 +135,8 @@ workflow RNASEQ {
         ch_annotation_bed
     )
     ch_inferred_strand = INFER_STRAND.out.inferred
+
+    ch_versions = ch_versions.mix(INFER_STRAND.out.versions)
 
     // Update the metadata to include the inferred strandedness information
     ch_inferred_strand
@@ -167,6 +173,7 @@ workflow RNASEQ {
 
     ch_multiqc_files = ch_multiqc_files
         .mix(FEATURECOUNTS.out.summary)
+    ch_versions = ch_versions.mix(FEATURECOUNTS.out.versions)
 
     ch_counts
         .collect(flat: false) { meta, counts -> counts }
@@ -189,6 +196,7 @@ workflow RNASEQ {
     )
 
 
-    // emit:
-    // counts = ch_counts
+    emit:
+    counts = COMBINE_COUNTS.out.counts
+    versions = ch_versions
 }
