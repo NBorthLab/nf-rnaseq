@@ -20,7 +20,7 @@ workflow RNASEQ {
     main:
 
     ch_multiqc_files = Channel.empty()
-    ch_versions = Channel.empty()
+    ch_versions      = Channel.empty()
 
     // Read sample sheet
     ch_samplesheet
@@ -68,6 +68,7 @@ workflow RNASEQ {
     FASTQC(
         ch_fastq
     )
+
     ch_versions = ch_versions.mix(FASTQC.out.versions)
 
     // ================================================
@@ -101,6 +102,7 @@ workflow RNASEQ {
         ch_genome,
         ch_unzipped_gtf
     )
+
     // .collect() is needed to transform from a queue channel (that can only be
     // consued once) to a value channel (multiple consumptions).
     ch_index = STAR_INDEX.out.index.collect()
@@ -113,10 +115,10 @@ workflow RNASEQ {
     )
     ch_alignment = STAR_ALIGN.out.alignment
 
+    ch_versions = ch_versions.mix(STAR_ALIGN.out.versions)
     ch_multiqc_files = ch_multiqc_files
         .mix(STAR_ALIGN.out.log)
         .mix(STAR_ALIGN.out.log_final)
-    ch_versions = ch_versions.mix(STAR_ALIGN.out.versions)
 
 
     // ================================================
@@ -171,10 +173,11 @@ workflow RNASEQ {
     )
     ch_counts = FEATURECOUNTS.out.counts
 
+    ch_versions = ch_versions.mix(FEATURECOUNTS.out.versions)
     ch_multiqc_files = ch_multiqc_files
         .mix(FEATURECOUNTS.out.summary)
-    ch_versions = ch_versions.mix(FEATURECOUNTS.out.versions)
 
+    // Get only counts file paths, remove meta data
     ch_counts
         .collect(flat: false) { meta, counts -> counts }
         .set { ch_counts }

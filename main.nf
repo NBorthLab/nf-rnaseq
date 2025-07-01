@@ -2,15 +2,12 @@
 
 include { RNASEQ } from "./workflows/rnaseq/main.nf"
 
-// include { processVersionsFromYaml } from "./modules/local/util/main.nf"
-// include { getNextflowVersion } from "./modules/local/util/main.nf"
-
 
 workflow {
 
     // Genome files
-    ch_gtf = Channel.fromPath(params.annotation_gtf)
-    ch_genome = Channel.fromPath(params.genome)
+    ch_gtf         = Channel.fromPath(params.annotation_gtf)
+    ch_genome      = Channel.fromPath(params.genome)
     ch_samplesheet = Channel.fromPath(params.input)
 
     // ================================================
@@ -31,9 +28,9 @@ workflow {
         .unique()
         .collectFile(
             storeDir: "results/pipeline_info",
-            name: "all_versions.yml",
-            sort: true,
-            newLine: true
+            name:     "all_versions.yml",
+            sort:     true,
+            newLine:  true
         )
 }
 

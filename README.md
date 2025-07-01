@@ -30,14 +30,14 @@ params {
 }
 ```
 
-The example below shows how such a sample sheet CSV file might look like.
-
+The example below shows how such a sample sheet CSV file might look like
+*(visually aligned for easier redability)*.
 ```plain
-sample,fastq_1,fastq_2,strandedness
-sample1,/data/sample1_1.fastq.gz,/data/sample1_2.fastq.gz,auto
-sample2,/data/sample2.fastq.gz,,auto
-sample3,/data/sample3.1_1.fastq.gz,/data/sample3.1_2.fastq.gz,auto
-sample3,/data/sample3.2_1.fastq.gz,/data/sample3.2_2.fastq.gz,auto
+ sample,                    fastq_1,                    fastq_2, strandedness
+sample1,   /data/sample1_1.fastq.gz,   /data/sample1_2.fastq.gz,         auto
+sample2,     /data/sample2.fastq.gz,                           ,         auto
+sample3, /data/sample3.1_1.fastq.gz, /data/sample3.1_2.fastq.gz,         auto
+sample3, /data/sample3.2_1.fastq.gz, /data/sample3.2_2.fastq.gz,         auto
 ```
 
 First column is the sample name; multiple mentions are allowed and will be
