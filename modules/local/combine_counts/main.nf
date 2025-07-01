@@ -2,7 +2,7 @@ process COMBINE_COUNTS {
 
     label 'small'
 
-    publishDir "${params.outdir}/counts", mode: "copy"
+    publishDir "results/counts", mode: "copy"
 
     input:
     path "counts.txt*"

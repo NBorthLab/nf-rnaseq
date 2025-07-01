@@ -3,7 +3,7 @@ process FEATURECOUNTS {
     label 'big'
 
     container "https://depot.galaxyproject.org/singularity/subread:2.0.8--h577a1d6_0"
-    publishDir "${params.outdir}/counts", mode: "copy", pattern: "!versions.yml"
+    publishDir "results/counts", mode: "copy"
 
     input:
     tuple val(meta), path(bam)

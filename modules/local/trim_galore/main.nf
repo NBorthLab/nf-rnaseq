@@ -3,7 +3,7 @@ process TRIM_GALORE {
     label 'big'
 
     container "https://depot.galaxyproject.org/singularity/trim-galore:0.6.9--hdfd78af_0"
-    publishDir "${params.outdir}/trimmed_reads", mode: "copy", pattern: "!versions.yml"
+    publishDir "results/trimmed_reads", mode: "copy"
 
     input:
     tuple val(meta), path(reads)
