@@ -17,6 +17,8 @@ workflow {
     //   Main Workflow
     // ================================================
 
+    print("Saving output to ${params.outdir}")
+
     RNASEQ(
         ch_gtf,
         ch_genome,
