@@ -14,20 +14,29 @@ Activate the conda environment with nextflow:
 conda activate nextflow
 ```
 
-## Configuration options
+## Configuration
 
-Edit `nextflow.config` and change it accordingly to your needs.
+### Pipeline config
 
-In particular, you will need to change the `params` block.
-Also double-check the computational settings. You might need to change
-`singularity.cacheDir`.
+Override the configuration (called `nextflow.config`) using an own config file
+and using the `-C` flag on the nextflow run
+([see docs](https://www.nextflow.io/docs/latest/cli.html)).
 
-```groovy
-params {
-    input = ""              // Samplesheet CSV file
-    genome = ""             // FASTA file of the genome sequence
-    annotation_gtf = ""     // GTF annotation file of the genome
-}
+### Pipeline parameters
+
+Parameters are either passed in as command line arguments (with double-dashed
+arguments `--`)
+```bash
+nextflow run ... --input samplesheet.csv --genome genome.fa --annotation_gtf annotation.gtf
+```
+or in a yaml (or json) file via the `-params-file` argument.
+```yaml
+input: "path/to/samplesheet.csv"
+genome: "path/to/genome.fasta"
+annotation_gtf: "path/to/gene_annotation.gtf"
+```
+```bash
+nextflow run NBorthLab/nf-rnaseq -params-file parameters.yml
 ```
 
 The example below shows how such a sample sheet CSV file might look like
@@ -62,16 +71,16 @@ nextflow secrets set NTFY_URL http://ntfy.sh/<YOUR-TOPIC>
 ## Test pipeline
 
 ```bash
-nextflow run . -profile test
+nextflow run NBorthLab/nf-rnaseq -profile test
 ```
 
 ## Run pipeline
 
 ```bash
-nextflow run .
+nextflow run NBorthLab/nf-rnaseq
 
 # or, for subsequent runs
-nextflow run . -resume
+nextflow run NBorthLab/nf-rnaseq -resume
 ```
 
 ## Output
