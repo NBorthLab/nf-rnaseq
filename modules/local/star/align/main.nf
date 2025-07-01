@@ -3,7 +3,7 @@ process STAR_ALIGN {
     label 'big'
 
     container "https://depot.galaxyproject.org/singularity/star:2.7.11b--h5ca1c30_4"
-    publishDir "results/aligned_reads", mode: "copy", pattern: "!versions.yml"
+    publishDir "${params.outdir}/aligned_reads", mode: "copy", pattern: "!versions.yml"
 
     input:
     tuple val(meta), path(reads)
