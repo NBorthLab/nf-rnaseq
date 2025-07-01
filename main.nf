@@ -1,7 +1,10 @@
 #!/usr/bin/env nextflow
 
-include { RNASEQ } from "./workflows/rnaseq/main.nf"
+include { RNASEQ } from "./workflows/rnaseq"
 
+include { processVersionsFromYaml } from "./modules/local/util"
+include { formatNextflowVersion   } from "./modules/local/util"
+include { sendNotification        } from "./modules/local/util"
 
 workflow {
 
@@ -23,8 +26,8 @@ workflow {
 
     // Process and save versions
     all_versions = RNASEQ.out.versions
-        .map { version -> Util.processVersionsFromYaml(version) }
-        .mix(Channel.of(Util.formatNextflowVersion(workflow.nextflow.version)))
+        .map { version -> processVersionsFromYaml(version) }
+        .mix(Channel.of(formatNextflowVersion()))
         .unique()
         .collectFile(
             storeDir: "results/pipeline_info",
@@ -41,9 +44,6 @@ workflow.onComplete {
     log.info "Execution status: ${workflow.success ? 'OK' : 'Failed'}"
 
     if (secrets.NTFY_URL != null) {
-        Util.sendNotification(
-            "${workflow.success ? 'OK': 'FAIL'}",
-            secrets.NTFY_URL
-        )
+        sendNotification("${workflow.success ? 'OK': 'FAIL'}", secrets.NTFY_URL)
     }
 }
