@@ -2,7 +2,9 @@ process COMBINE_COUNTS {
 
     label 'small'
 
-    publishDir "results/counts", mode: "copy"
+    publishDir "results/counts",
+        mode: "copy",
+        saveAs: { filename -> filename.equals("versions.yml") ? null : filename }
 
     input:
     path "counts.txt*"
