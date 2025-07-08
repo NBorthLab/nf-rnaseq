@@ -200,6 +200,7 @@ workflow RNASEQ {
 
 
     emit:
-    counts = COMBINE_COUNTS.out.counts
+    aligned_reads = STAR_ALIGN.out.alignment
+    all_counts = COMBINE_COUNTS.out.counts
     versions = ch_versions
 }
