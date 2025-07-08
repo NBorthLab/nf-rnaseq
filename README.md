@@ -81,6 +81,9 @@ nextflow run NBorthLab/nf-rnaseq
 
 # or, for subsequent runs
 nextflow run NBorthLab/nf-rnaseq -resume
+
+# RECOMMENDED: Use a specific version of the pipeline with the -r option
+nextflow run NBorthLab/nf-rnaseq -r 1.2.1
 ```
 
 ## Output
