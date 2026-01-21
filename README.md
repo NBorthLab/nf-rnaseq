@@ -1,5 +1,8 @@
 # Nextflow RNA-seq pipeline
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18327019.svg)](https://doi.org/10.5281/zenodo.18327019)
+
+
 ## Initial setup
 
 Install nextflow e.g. in an conda environment:
