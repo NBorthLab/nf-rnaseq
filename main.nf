@@ -9,9 +9,9 @@ include { sendNotification        } from "./modules/local/util"
 workflow {
 
     // Genome files
-    ch_gtf         = Channel.fromPath(params.annotation_gtf)
-    ch_genome      = Channel.fromPath(params.genome)
-    ch_samplesheet = Channel.fromPath(params.input)
+    gtf         = params.annotation_gtf
+    genome      = params.genome
+    samplesheet = params.input
 
     // ================================================
     //   Main Workflow
@@ -19,16 +19,16 @@ workflow {
 
 
     RNASEQ(
-        ch_gtf,
-        ch_genome,
-        ch_samplesheet
+        gtf,
+        genome,
+        samplesheet
     )
 
 
     // Process and save versions
-    all_versions = RNASEQ.out.versions
+    RNASEQ.out.versions
         .map { version -> processVersionsFromYaml(version) }
-        .mix(Channel.of(formatNextflowVersion()))
+        .mix(channel.of(formatNextflowVersion()))
         .unique()
         .collectFile(
             storeDir: "results/pipeline_info",
@@ -36,15 +36,17 @@ workflow {
             sort:     true,
             newLine:  true
         )
-}
 
 
-workflow.onComplete {
-    log.info "Workflow completed at $workflow.complete"
-    log.info "Duration: $workflow.duration"
-    log.info "Execution status: ${workflow.success ? 'OK' : 'Failed'}"
+    workflow.onComplete = {
+        log.info "Workflow completed at $workflow.complete"
+        log.info "Duration: $workflow.duration"
+        log.info "Execution status: ${workflow.success ? 'OK' : 'Failed'}"
 
-    if (secrets.NTFY_URL != null) {
-        sendNotification("${workflow.success ? 'OK': 'FAIL'}", secrets.NTFY_URL)
+        if (secrets.NTFY_URL != null) {
+            sendNotification("${workflow.success ? 'OK': 'FAIL'}", secrets.NTFY_URL)
+        }
     }
 }
+
+

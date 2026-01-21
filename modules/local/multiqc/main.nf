@@ -3,7 +3,7 @@ process MULTIQC {
     label 'medium'
 
     container "https://depot.galaxyproject.org/singularity/multiqc:1.9--pyh9f0ad1d_0"
-    publishDir "results/multiqc",
+    publishDir "${params.outdir}/multiqc",
         mode: "copy",
         saveAs: { filename -> filename.equals("versions.yml") ? null : filename }
 

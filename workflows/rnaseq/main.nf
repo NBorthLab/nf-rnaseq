@@ -1,29 +1,33 @@
-include { FASTQC               } from "../../modules/local/fastqc"
-include { TRIM_GALORE          } from "../../modules/local/trim_galore"
-include { STAR_INDEX           } from "../../modules/local/star/index"
-include { STAR_ALIGN           } from "../../modules/local/star/align"
-include { INFER_STRAND         } from "../../modules/local/rseqc/infer_strand"
-include { FEATURECOUNTS        } from "../../modules/local/featurecounts"
-include { GUNZIP as GUNZIP_GTF } from "../../modules/local/util"
-include { GTF2BED              } from "../../modules/local/util"
-include { COMBINE_COUNTS       } from "../../modules/local/combine_counts"
-include { MULTIQC              } from "../../modules/local/multiqc"
+include { FASTQC                   } from "../../modules/local/fastqc"
+include { TRIM_GALORE              } from "../../modules/local/trim_galore"
+include { RSEM_PREPAREREFERENCE    } from "../../modules/local/rsem/preparereference"
+include { RSEM_CALCULATEEXPRESSION } from "../../modules/local/rsem/calculateexpression"
+include { STAR_INDEX               } from "../../modules/local/star/index"
+include { STAR_ALIGN               } from "../../modules/local/star/align"
+include { INFER_STRAND             } from "../../modules/local/rseqc/infer_strand"
+include { FEATURECOUNTS            } from "../../modules/local/featurecounts"
+include { GUNZIP as GUNZIP_GTF     } from "../../modules/local/util"
+include { GUNZIP as GUNZIP_FNA     } from "../../modules/local/util"
+include { GTF2BED                  } from "../../modules/local/util"
+include { COMBINE_COUNTS_RSEM      } from "../../modules/local/combine_counts"
+include { MULTIQC                  } from "../../modules/local/multiqc"
 
 
 workflow RNASEQ {
 
     take:
-    ch_gtf
-    ch_genome
-    ch_samplesheet
+    gtf
+    genome
+    samplesheet
 
     main:
 
-    ch_multiqc_files = Channel.empty()
-    ch_versions      = Channel.empty()
+    ch_multiqc_files = channel.empty()
+    ch_versions      = channel.empty()
+
 
     // Read sample sheet
-    ch_samplesheet
+    channel.fromPath(samplesheet)
         .splitCsv(skip: 1)
         .map { sample, fastq_1, fastq_2, strandedness ->
             [
@@ -68,8 +72,8 @@ workflow RNASEQ {
     FASTQC(
         ch_fastq
     )
-
     ch_versions = ch_versions.mix(FASTQC.out.versions)
+
 
     // ================================================
     //   TRIM READS
@@ -80,8 +84,7 @@ workflow RNASEQ {
         ch_fastq
     )
     ch_trimmed_reads = TRIM_GALORE.out.reads
-
-    ch_versions = ch_versions.mix(TRIM_GALORE.out.versions)
+    ch_versions      = ch_versions.mix(TRIM_GALORE.out.versions)
     ch_multiqc_files = ch_multiqc_files
         .mix(TRIM_GALORE.out.report)
         .mix(TRIM_GALORE.out.zip)
@@ -91,32 +94,42 @@ workflow RNASEQ {
     //   ALIGN READS
     // ================================================
 
-    // Unzip annotation GTF file
-    GUNZIP_GTF(
-        ch_gtf
-    )
-    ch_unzipped_gtf = GUNZIP_GTF.out
+    if (gtf.endsWith(".gz")) {
+        GUNZIP_GTF(
+            gtf
+        )
+        ch_unzipped_gtf = GUNZIP_GTF.out
+    } else {
+        ch_unzipped_gtf = channel.fromPath(gtf)
+    }
 
-    // Index genome
-    STAR_INDEX(
-        ch_genome,
+    if (genome.endsWith(".gz")) {
+        GUNZIP_FNA(
+            genome
+        )
+        ch_unzipped_genome = GUNZIP_FNA.out
+    } else {
+        ch_unzipped_genome = channel.fromPath(genome)
+    }
+
+
+    RSEM_PREPAREREFERENCE(
+        ch_unzipped_genome,
         ch_unzipped_gtf
     )
+    ch_index    = RSEM_PREPAREREFERENCE.out.index.collect()
+    ch_versions = ch_versions.mix(RSEM_PREPAREREFERENCE.out.versions)
 
-    // .collect() is needed to transform from a queue channel (that can only be
-    // consued once) to a value channel (multiple consumptions).
-    ch_index = STAR_INDEX.out.index.collect()
-    ch_versions = ch_versions.mix(STAR_INDEX.out.versions)
 
     // Align trimmed reads to genome
     STAR_ALIGN(
         ch_trimmed_reads,
         ch_index
     )
-    ch_alignment = STAR_ALIGN.out.alignment
-
-    ch_versions = ch_versions.mix(STAR_ALIGN.out.versions)
-    ch_multiqc_files = ch_multiqc_files
+    ch_genome_bam        = STAR_ALIGN.out.genome_bam
+    ch_transcriptome_bam = STAR_ALIGN.out.transcriptome_bam
+    ch_versions          = ch_versions.mix(STAR_ALIGN.out.versions)
+    ch_multiqc_files     = ch_multiqc_files
         .mix(STAR_ALIGN.out.log)
         .mix(STAR_ALIGN.out.log_final)
 
@@ -131,34 +144,38 @@ workflow RNASEQ {
     )
     ch_annotation_bed = GTF2BED.out.collect()
 
+
     // Infer strandedness of alignment
     INFER_STRAND(
-        ch_alignment,
+        ch_genome_bam,
         ch_annotation_bed
     )
     ch_inferred_strand = INFER_STRAND.out.inferred
+    ch_versions        = ch_versions.mix(INFER_STRAND.out.versions)
 
-    ch_versions = ch_versions.mix(INFER_STRAND.out.versions)
 
     // Update the metadata to include the inferred strandedness information
     ch_inferred_strand
+        .join(ch_transcriptome_bam)
         .map {
-            meta, log, alignment ->
+            meta, log, _genome_bam, transcriptome_bam ->
                 def log_file = file(log)
                 def log_text = log_file.readLines()
                 def fw = log_text[4] =~ /.+ (.+)$/
                 def rv = log_text[5] =~ /.+ (.+)$/
                 def fw_stranded = fw[0][1] as Float > 0.75
                 def rv_stranded = rv[0][1] as Float > 0.75
+                def new_meta = [:]
 
                 if (!fw_stranded && !rv_stranded) {
-                    meta.strandedness = "unstranded"
+                    new_meta = meta + [strandedness: "unstranded"]
                 } else if (fw_stranded && !rv_stranded) {
-                    meta.strandedness = "forward"
+                    new_meta = meta + [strandedness: "forward"]
                 } else if (!fw_stranded && rv_stranded) {
-                    meta.strandedness = "reverse"
+                    new_meta = meta + [strandedness: "reverse"]
                 }
-                return [meta, alignment]
+
+                return [new_meta, transcriptome_bam]
         }
         .set { ch_alignment_inferred }
 
@@ -167,22 +184,21 @@ workflow RNASEQ {
     //   Quantify reads
     // ================================================
 
-    FEATURECOUNTS(
+    RSEM_CALCULATEEXPRESSION(
         ch_alignment_inferred,
-        ch_unzipped_gtf.collect()
+        ch_index
     )
-    ch_counts = FEATURECOUNTS.out.counts
+    ch_counts_gene   = RSEM_CALCULATEEXPRESSION.out.counts_gene
+    ch_versions      = ch_versions.mix(RSEM_CALCULATEEXPRESSION.out.versions)
+    ch_multiqc_files = ch_multiqc_files.mix(RSEM_CALCULATEEXPRESSION.out.stat)
 
-    ch_versions = ch_versions.mix(FEATURECOUNTS.out.versions)
-    ch_multiqc_files = ch_multiqc_files
-        .mix(FEATURECOUNTS.out.summary)
 
     // Get only counts file paths, remove meta data
-    ch_counts
+    ch_counts_gene
         .collect(flat: false) { meta, counts -> counts }
         .set { ch_counts }
 
-    COMBINE_COUNTS(
+    COMBINE_COUNTS_RSEM(
         ch_counts
     )
 
@@ -190,6 +206,7 @@ workflow RNASEQ {
     // ================================================
     //   MULTIQC
     // ================================================
+
 
     // Remove meta data and get only the file paths
     ch_multiqc_files = ch_multiqc_files.transpose().collect { it[1] }
@@ -200,7 +217,6 @@ workflow RNASEQ {
 
 
     emit:
-    aligned_reads = STAR_ALIGN.out.alignment
-    all_counts = COMBINE_COUNTS.out.counts
-    versions = ch_versions
+    all_counts = COMBINE_COUNTS_RSEM.out.counts
+    versions   = ch_versions
 }
