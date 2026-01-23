@@ -96,7 +96,7 @@ workflow RNASEQ {
 
     if (gtf.endsWith(".gz")) {
         GUNZIP_GTF(
-            gtf
+            file(gtf)
         )
         ch_unzipped_gtf = GUNZIP_GTF.out
     } else {
@@ -105,7 +105,7 @@ workflow RNASEQ {
 
     if (genome.endsWith(".gz")) {
         GUNZIP_FNA(
-            genome
+            file(genome)
         )
         ch_unzipped_genome = GUNZIP_FNA.out
     } else {
